@@ -1,0 +1,30 @@
+# 基础模型 & 数据集（可先用小数据集打通流程）
+model_name: Qwen/Qwen2.5-0.5B-Instruct   # Qwen/Qwen3-1.7B
+
+# 训练数据（先用一个小SFT数据集验证，之后你再换自己的）
+dataset: yahma/alpaca-cleaned
+text_column: input
+response_column: output
+prompt_template: "<s>Instruction: {input}\nResponse: "
+
+# 训练超参（先小步跑通）
+output_dir: weights/train/run-sft
+num_train_epochs: 1
+max_steps: 120            # 优先按步数跑；确认OK后再放开
+per_device_train_batch_size: 2
+gradient_accumulation_steps: 8
+learning_rate: 2e-5
+warmup_ratio: 0.03
+weight_decay: 0.01
+logging_steps: 10
+save_steps: 20
+save_total_limit: 3
+
+# 精度/设备
+bf16: true                # 你的GPU支持就用；不支持会自动回退
+tf32: true
+
+# 其他
+seed: 42
+report_to: none           # 先不接W&B，等通了再接
+dataloader_num_workers: 2
