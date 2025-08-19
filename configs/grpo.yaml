@@ -1,0 +1,39 @@
+# ===== 基本配置 =====
+base_model: Qwen/Qwen3-1.7B
+train_parquet: data/deepscaler.parquet
+output_dir: weights/grpo-qwen3-1p7b-deepscaler
+
+# 文本长度与batch
+max_prompt_len: 1024
+max_resp_len: 256
+train_batch_size: 16          # 全局batch（VERL会按GPU拆分）
+ppo_micro_batch_per_gpu: 2    # 单卡micro-batch
+ppo_mini_batch_size: 8
+ppo_epochs: 1
+
+# Prompt
+prompt_template: |
+  You are a careful math solver. Solve step by step.
+  Put ONLY the final numeric/closed-form answer at the end as LaTeX \boxed{{...}}.
+
+  Problem:
+  {problem}
+
+# GRPO 关键
+rollout_n: 4                  # 每个prompt生成n个样本（GRPO组大小）
+use_kl: true
+kl_coef: 0.01                 # 先小；跑通后再调
+kl_type: low_var_kl           # 低方差KL（VERL支持的一个选项）
+adv_estimator: grpo
+
+# 训练过程
+n_gpus: 1
+nnodes: 1
+learning_rate: 5e-6
+total_epochs: 1               # 先快速打通
+logging: console
+save_steps: 1
+max_steps: 2
+
+# 其他
+seed: 42

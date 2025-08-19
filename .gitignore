@@ -1,4 +1,4 @@
-.py_env
+.py*
 __pycache__/
 logs/
 data/
