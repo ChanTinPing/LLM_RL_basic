@@ -78,7 +78,7 @@ def main():
         # ===== trainer =====
         f"trainer.default_local_dir={cfg['output_dir']}",
         f"trainer.logger={cfg['logging']}",
-        f"trainer.total_epochs={cfg['total_epochs']}",  #######
+        f"trainer.total_epochs={cfg['total_epochs']}",  #############
         f"trainer.n_gpus_per_node={cfg['n_gpus']}",
         f"trainer.nnodes={cfg['nnodes']}",
         f"trainer.save_freq={cfg['save_steps']}",   

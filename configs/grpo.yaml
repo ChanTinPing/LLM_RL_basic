@@ -1,5 +1,5 @@
 # ===== 基本配置 =====
-base_model: Qwen/Qwen3-1.7B
+base_model: "/root/autodl-tmp/LLM_RL_basic/weights/Qwen3-1p7B"
 train_parquet: data/deepscaler.parquet
 output_dir: weights/grpo-qwen3-1p7b-deepscaler
 

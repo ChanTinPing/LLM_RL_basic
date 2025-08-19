@@ -4,6 +4,7 @@ logs/
 data/
 weights/
 checkpoints/
+outputs/
 *.safetensors
 *.pt
 *.ckpt
