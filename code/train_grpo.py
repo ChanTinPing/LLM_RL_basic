@@ -45,7 +45,7 @@ def main():
         sys.executable, "-m", "verl.trainer.main_ppo",
 
         f"+actor_rollout_ref.actor.fsdp_config.model_dtype={cfg['dtype']}",
-        #f"actor_rollout_ref.rollout.tensor_model_parallel_size={cfg['tp_size']}",
+        f"actor_rollout_ref.rollout.tensor_model_parallel_size={cfg['tp_size']}",
 
         # ===== 数据 =====
         f"data.train_files={os.path.abspath(cfg['train_parquet'])}",

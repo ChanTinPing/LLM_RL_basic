@@ -1,14 +1,14 @@
 # ===== 基本配置 =====
 base_model: "/root/autodl-tmp/LLM_RL_basic/weights/Qwen3-1p7B"
-train_parquet: /root/autodl-tmp/LLM_RL_basic/data/deepscaler.parquet  # data/deepscaler.parquet
+train_parquet: /root/autodl-tmp/LLM_RL_basic/data/deepscaler_small.parquet  # data/deepscaler.parquet
 output_dir: weights/grpo-qwen3-1p7b-deepscaler
 
 # 文本长度与batch
 max_prompt_len: 1024
 max_resp_len: 256
-train_batch_size: 16          # 全局batch（VERL会按GPU拆分）
-ppo_micro_batch_per_gpu: 2    # 单卡micro-batch
-ppo_mini_batch_size: 8
+train_batch_size: 4           # 全局batch（VERL会按GPU拆分）
+ppo_micro_batch_per_gpu: 1    # 单卡micro-batch
+ppo_mini_batch_size: 1
 ppo_epochs: 1
 
 # Prompt
