@@ -44,6 +44,9 @@ def main():
     cmd = [
         sys.executable, "-m", "verl.trainer.main_ppo",
 
+        f"+actor_rollout_ref.actor.fsdp_config.model_dtype={cfg['dtype']}",
+        #f"actor_rollout_ref.rollout.tensor_model_parallel_size={cfg['tp_size']}",
+
         # ===== 数据 =====
         f"data.train_files={os.path.abspath(cfg['train_parquet'])}",
         f"data.val_files={os.path.abspath(cfg['train_parquet'])}", 
@@ -54,13 +57,13 @@ def main():
         "trainer.test_freq=0",                ##########
 
         # ===== 模型 =====
-        f"actor_rollout_ref.model.path={cfg['base_model']}",
+        f"actor_rollout_ref.model.path={cfg['base_model']}",   
         "actor_rollout_ref.model.trust_remote_code=true",
         f"actor_rollout_ref.actor.optim.lr={cfg['learning_rate']}",
         f"actor_rollout_ref.actor.ppo_mini_batch_size={cfg['ppo_mini_batch_size']}",
         f"actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu={cfg['ppo_micro_batch_per_gpu']}",
         f"actor_rollout_ref.actor.ppo_epochs={cfg['ppo_epochs']}",
-
+        
         # ===== rollout =====
         "actor_rollout_ref.rollout.name=vllm",
         "actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=8",

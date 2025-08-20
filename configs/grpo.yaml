@@ -1,6 +1,6 @@
 # ===== 基本配置 =====
 base_model: "/root/autodl-tmp/LLM_RL_basic/weights/Qwen3-1p7B"
-train_parquet: data/deepscaler.parquet
+train_parquet: /root/autodl-tmp/LLM_RL_basic/data/deepscaler.parquet  # data/deepscaler.parquet
 output_dir: weights/grpo-qwen3-1p7b-deepscaler
 
 # 文本长度与batch
@@ -27,8 +27,10 @@ kl_type: low_var_kl           # 低方差KL（VERL支持的一个选项）
 adv_estimator: grpo
 
 # 训练过程
-n_gpus: 1
-nnodes: 1
+dtype: bfloat16
+tp_size: 1
+n_gpus: 1                     # 一机器多少GPU
+nnodes: 1                     # 多少机器
 learning_rate: 5e-6
 total_epochs: 1               # 先快速打通
 logging: console

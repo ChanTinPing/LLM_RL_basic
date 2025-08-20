@@ -5,6 +5,7 @@ data/
 weights/
 checkpoints/
 outputs/
+scripts/test.py
 *.safetensors
 *.pt
 *.ckpt
