@@ -44,9 +44,6 @@ def main():
     cmd = [
         sys.executable, "-m", "verl.trainer.main_ppo",
 
-        f"+actor_rollout_ref.actor.fsdp_config.model_dtype={cfg['dtype']}",
-        f"actor_rollout_ref.rollout.tensor_model_parallel_size={cfg['tp_size']}",
-
         # ===== 数据 =====
         f"data.train_files={os.path.abspath(cfg['train_parquet'])}",
         f"data.val_files={os.path.abspath(cfg['train_parquet'])}", 
@@ -63,6 +60,7 @@ def main():
         f"actor_rollout_ref.actor.ppo_mini_batch_size={cfg['ppo_mini_batch_size']}",
         f"actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu={cfg['ppo_micro_batch_per_gpu']}",
         f"actor_rollout_ref.actor.ppo_epochs={cfg['ppo_epochs']}",
+        f"+actor_rollout_ref.actor.fsdp_config.model_dtype={cfg['dtype']}",
         
         # ===== rollout =====
         "actor_rollout_ref.rollout.name=vllm",
@@ -86,6 +84,12 @@ def main():
         f"trainer.nnodes={cfg['nnodes']}",
         f"trainer.save_freq={cfg['save_steps']}",   
         #f"trainer.test_freq={cfg['test_freq']}",   
+        f"actor_rollout_ref.rollout.tensor_model_parallel_size={cfg['tp_size']}",
+        
+        # ===== reward =====
+        "reward_model.enable=false",
+        f"custom_reward_function.path={os.path.abspath(cfg['reward_func'])}",
+        "custom_reward_function.name=compute_score",
     ]
 
     env = os.environ.copy()

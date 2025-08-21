@@ -1,4 +1,4 @@
-# source .py_c128/bin/activate
+# source /root/autodl-tmp/LLM_RL_basic/.py_c128/bin/activate
 # source /etc/network_turbo
 # unset http_proxy && unset https_proxy
 

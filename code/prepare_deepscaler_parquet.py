@@ -1,4 +1,5 @@
 import os, yaml
+import pandas as pd
 from datasets import load_dataset, Dataset
 
 def _pick_first(*keys):
@@ -25,12 +26,25 @@ def main(out_path="data/deepscaler.parquet", cfg_path="configs/grpo.yaml"):
             continue
         prompt = [{"role": "user", "content": PROMPT_INSTRUCTION.format(problem=problem)}]
         rows.append({
-            "prompt": prompt,                 # VERL期望是 messages 列表
-            "ground_truth": str(answer),      # 用于reward核对
+            "prompt": prompt, 
+            "reward_model": {"ground_truth": str(answer)},  
             "data_source": "deepscaler",
         })
     Dataset.from_list(rows).to_parquet(out_path)
     print(f"[prepare] wrote {len(rows)} rows -> {out_path}")
 
+
+def small_parquet():
+    in_path  = "data/deepscaler.parquet"        # 原始 parquet 路径
+    out_path = "data/deepscaler_small.parquet"  # 输出 parquet 路径
+
+    df = pd.read_parquet(in_path)
+    df_small = df.head(10)   # 只取前 10 条
+
+    df_small.to_parquet(out_path, index=False)
+    print(f"[done] wrote {len(df_small)} rows -> {out_path}")
+
+
 if __name__ == "__main__":
     main()
+    #small_parquet()

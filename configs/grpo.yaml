@@ -2,6 +2,7 @@
 base_model: "/root/autodl-tmp/LLM_RL_basic/weights/Qwen3-1p7B"
 train_parquet: /root/autodl-tmp/LLM_RL_basic/data/deepscaler_small.parquet  # data/deepscaler.parquet
 output_dir: weights/grpo-qwen3-1p7b-deepscaler
+reward_func: code/reward_math_verify.py
 
 # 文本长度与batch
 max_prompt_len: 1024
