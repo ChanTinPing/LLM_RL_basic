@@ -43,6 +43,8 @@ def main():
 
     cmd = [
         sys.executable, "-m", "verl.trainer.main_ppo",
+        
+        f"+actor_rollout_ref.model.override_config._attn_implementation={cfg['attn']}",
 
         # ===== 数据 =====
         f"data.train_files={os.path.abspath(cfg['train_parquet'])}",

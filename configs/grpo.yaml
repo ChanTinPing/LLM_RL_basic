@@ -5,9 +5,9 @@ output_dir: weights/grpo-qwen3-1p7b-deepscaler
 reward_func: code/reward_math_verify.py
 
 # 文本长度与batch
-max_prompt_len: 1024
+max_prompt_len: 512
 max_resp_len: 256
-train_batch_size: 4           # 全局batch（VERL会按GPU拆分）
+train_batch_size: 1           # 全局batch（VERL会按GPU拆分）
 ppo_micro_batch_per_gpu: 1    # 单卡micro-batch
 ppo_mini_batch_size: 1
 ppo_epochs: 1
@@ -21,22 +21,22 @@ prompt_template: |
   {problem}
 
 # GRPO 关键
-rollout_n: 4                  # 每个prompt生成n个样本（GRPO组大小）
+rollout_n: 2                  # 每个prompt生成n个样本（GRPO组大小）
 use_kl: true
 kl_coef: 0.01                 # 先小；跑通后再调
 kl_type: low_var_kl           # 低方差KL（VERL支持的一个选项）
 adv_estimator: grpo
 
 # 训练过程
-dtype: bfloat16
+dtype: float32
 tp_size: 1
 n_gpus: 1                     # 一机器多少GPU
 nnodes: 1                     # 多少机器
 learning_rate: 5e-6
 total_epochs: 1               # 先快速打通
 logging: console
-save_steps: 1
-max_steps: 2
+save_steps: 10                # 多少iteration save一次
+attn: flash_attention_2
 
 # 其他
 seed: 42

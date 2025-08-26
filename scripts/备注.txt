@@ -12,6 +12,23 @@ ssh -T git@github.com
 
 git remote set-url origin git@github.com:ChanTinPing/LLM_RL_basic.git
 
+# 代码输出
+import os, datetime
+def _log(p):
+    ts = datetime.datetime.now().strftime("%F %T")
+    os.makedirs("/root/autodl-tmp/LLM_RL_basic/outputs", exist_ok=True)
+    with open("/root/autodl-tmp/LLM_RL_basic/outputs/ppo_trace.txt","a",encoding="utf-8") as f:
+        f.write(f"[{ts}] {p}\n"); f.flush(); os.fsync(f.fileno())
+
+_log("ENTER run_ppo")
+
+import os, datetime
+def _trace(msg):
+    ts = datetime.datetime.now().strftime("%F %T")
+    os.makedirs("/root/autodl-tmp/LLM_RL_basic/outputs", exist_ok=True)
+    with open("/root/autodl-tmp/LLM_RL_basic/outputs/model_load_trace.txt","a",encoding="utf-8") as f:
+        f.write(f"[{ts}] {msg}\n"); f.flush(); os.fsync(f.fileno())
+_trace(f"_load_hf_model: is_value_model={is_value_model}, local_cache_path={local_cache_path}")
 
 # python 安装
 pip install torch --index-url https://download.pytorch.org/whl/cu128
