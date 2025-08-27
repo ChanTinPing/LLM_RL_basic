@@ -79,4 +79,4 @@ if __name__ == "__main__":
         cfg_path="configs/grpo.yaml",
         split="test",   # 两个 subset 都用同一个 split 读取
     )
-    #small_parquet("data/aime2025-all.parquet", "data/aime2025-all-small.parquet", n=10)
+    small_parquet("data/aime2025-all.parquet", "data/aime2025-all-small.parquet", n=2)

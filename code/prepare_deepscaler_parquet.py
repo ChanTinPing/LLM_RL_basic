@@ -46,5 +46,5 @@ def small_parquet():
 
 
 if __name__ == "__main__":
-    #main()
+    main()
     small_parquet()

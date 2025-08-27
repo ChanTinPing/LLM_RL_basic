@@ -15,8 +15,9 @@ ppo_epochs: 1
 
 # Prompt
 prompt_template: |
-  You are a careful math solver. Solve step by step.
-  Put ONLY the final numeric/closed-form answer at the end as LaTeX \boxed{{...}}.
+  Please reason step by step. 
+  At the very end, output ONLY the final numeric/closed-form answer in LaTeX as \boxed{{...}}. 
+  Do not add any text after the box.
 
   Problem:
   {problem}
