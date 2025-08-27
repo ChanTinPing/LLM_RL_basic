@@ -28,8 +28,6 @@ _PRED_CFG = [PRED_LATEX,  ExprExtractionConfig()]
 
 def compute_score(data_source, solution_str, ground_truth, extra_info=None) -> float:
     # 仅处理 deepscaler，其它 data_source 交回 VERL 默认分支
-    if data_source != "deepscaler":
-        return -9999.0
     try:
         gold = parse(str(ground_truth), extraction_config=_GOLD_CFG)
         pred = parse(str(solution_str),  extraction_config=_PRED_CFG)

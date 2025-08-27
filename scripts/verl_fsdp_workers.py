@@ -622,8 +622,10 @@ class ActorRolloutRefWorker(Worker, DistProfilerExtension):
                 model_hf_config=self.actor_model_config,
                 device_mesh=rollout_device_mesh,
                 trust_remote_code=trust_remote_code,
+                dtype="bfloat16",
                 **lora_kwargs,
             )
+            _trace_log("Got build rollout vllm")
 
             log_gpu_memory_usage(f"After building {rollout_name} rollout", logger=logger)
             full_params = torch.distributed.get_world_size() == 1

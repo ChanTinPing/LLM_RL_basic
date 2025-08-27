@@ -1,8 +1,9 @@
 # ===== 基本配置 =====
-base_model: "/root/autodl-tmp/LLM_RL_basic/weights/Qwen3-1p7B"
+base_model: /root/autodl-tmp/LLM_RL_basic/weights/Qwen3-1p7B
 train_parquet: /root/autodl-tmp/LLM_RL_basic/data/deepscaler_small.parquet  # data/deepscaler.parquet
-output_dir: weights/grpo-qwen3-1p7b-deepscaler
+output_dir: weights/grpo-qwen3-1p7b
 reward_func: code/reward_math_verify.py
+logging: tensorboard
 
 # 文本长度与batch
 max_prompt_len: 512
@@ -34,9 +35,12 @@ n_gpus: 1                     # 一机器多少GPU
 nnodes: 1                     # 多少机器
 learning_rate: 5e-6
 total_epochs: 1               # 先快速打通
-logging: console
-save_steps: 10                # 多少iteration save一次
 attn: flash_attention_2
+save_steps: 5                # 多少iteration save一次
+
+# 测试
+test_steps: 5
+aime25_parquet: /root/autodl-tmp/LLM_RL_basic/data/aime2025-all.parquet
 
 # 其他
 seed: 42

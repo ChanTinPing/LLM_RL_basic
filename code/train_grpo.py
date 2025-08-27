@@ -1,4 +1,5 @@
-import os, sys, subprocess, argparse, yaml, random, torch
+import os, sys, subprocess, argparse, yaml, random, torch, shlex, re
+from datetime import datetime
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -44,11 +45,9 @@ def main():
     cmd = [
         sys.executable, "-m", "verl.trainer.main_ppo",
         
-        f"+actor_rollout_ref.model.override_config._attn_implementation={cfg['attn']}",
-
         # ===== 数据 =====
-        f"data.train_files={os.path.abspath(cfg['train_parquet'])}",
-        f"data.val_files={os.path.abspath(cfg['train_parquet'])}", 
+        f"data.train_files={cfg['train_parquet']}",
+        f"data.val_files={cfg['aime25_parquet']}", 
         f"data.train_batch_size={cfg['train_batch_size']}",
         f"data.max_prompt_length={cfg['max_prompt_len']}",
         f"data.max_response_length={cfg['max_resp_len']}",
@@ -85,8 +84,10 @@ def main():
         f"trainer.n_gpus_per_node={cfg['n_gpus']}",
         f"trainer.nnodes={cfg['nnodes']}",
         f"trainer.save_freq={cfg['save_steps']}",   
-        #f"trainer.test_freq={cfg['test_freq']}",   
+        "trainer.val_before_train=true",
+        f"trainer.test_freq={cfg['test_steps']}",  
         f"actor_rollout_ref.rollout.tensor_model_parallel_size={cfg['tp_size']}",
+        f"+actor_rollout_ref.model.override_config._attn_implementation={cfg['attn']}",
         
         # ===== reward =====
         "reward_model.enable=false",
@@ -96,7 +97,34 @@ def main():
 
     env = os.environ.copy()
     env["HYDRA_FULL_ERROR"] = "1"
-    subprocess.run(cmd, env=env)
+    env["TENSORBOARD_DIR"] = "/root/autodl-tmp/LLM_RL_basic/outputs/tb"
+    env.setdefault("PYTHONUNBUFFERED", "1")
+    # env["RAY_TMPDIR"] = "/root/autodl-tmp/LLM_RL_basic/outputs/ray"  # 收集 ray 的信息
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    logfile  = f"/root/autodl-tmp/LLM_RL_basic/outputs/log/driver.stdout.{timestamp}.log"
+
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    with open(logfile, "a", buffering=1) as f:  # 行缓冲
+        # text=True + bufsize=1 => 按行读取
+        proc = subprocess.Popen(
+            cmd,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+        )
+        try:
+            for line in proc.stdout:
+                print(line, end="")  # 终端实时显示
+                clean_line = ansi_escape.sub('', line)    # 去掉颜色码
+                f.write(clean_line)   
+        finally:
+            proc.stdout.close()
+            rc = proc.wait()
+    if rc != 0:
+        raise SystemExit(rc)
     
 if __name__ == "__main__":
     main()

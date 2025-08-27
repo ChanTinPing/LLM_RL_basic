@@ -39,12 +39,12 @@ def small_parquet():
     out_path = "data/deepscaler_small.parquet"  # 输出 parquet 路径
 
     df = pd.read_parquet(in_path)
-    df_small = df.head(10)   # 只取前 10 条
+    df_small = df.head(5)   # 只取前 5 条
 
     df_small.to_parquet(out_path, index=False)
     print(f"[done] wrote {len(df_small)} rows -> {out_path}")
 
 
 if __name__ == "__main__":
-    main()
-    #small_parquet()
+    #main()
+    small_parquet()
