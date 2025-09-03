@@ -2,6 +2,8 @@
 # source /etc/network_turbo
 # unset http_proxy && unset https_proxy
 /root/autodl-tmp/LLM_RL_basic/.py_c128/lib/python3.12/site-packages/verl
+pip freeze > requirements.txt
+
 
 # Github SSH
 ssh-keygen -t ed25519 -C "tinpingchan@yahoo.com"

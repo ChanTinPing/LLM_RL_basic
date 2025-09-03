@@ -57,18 +57,23 @@ def main():
         # ===== 模型 =====
         f"actor_rollout_ref.model.path={cfg['base_model']}",   
         "actor_rollout_ref.model.trust_remote_code=true",
+        "actor_rollout_ref.actor.strategy=megatron",
+        "critic.strategy=megatron",
+        f"actor_rollout_ref.actor.megatron.tensor_model_parallel_size={cfg['tp_size']}",
         f"actor_rollout_ref.actor.optim.lr={cfg['learning_rate']}",
         f"actor_rollout_ref.actor.ppo_mini_batch_size={cfg['ppo_mini_batch_size']}",
         f"actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu={cfg['ppo_micro_batch_per_gpu']}",
         f"actor_rollout_ref.actor.ppo_epochs={cfg['ppo_epochs']}",
-        f"+actor_rollout_ref.actor.fsdp_config.model_dtype={cfg['dtype']}",
         
         # ===== rollout =====
         "actor_rollout_ref.rollout.name=vllm",
         "actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=8",
-        "actor_rollout_ref.rollout.gpu_memory_utilization=0.4",
+        f"actor_rollout_ref.rollout.gpu_memory_utilization={cfg['mem_utilz']}",
         "actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=4",
-
+        "actor_rollout_ref.rollout.load_format=dummy_megatron",
+        f"actor_rollout_ref.rollout.tensor_model_parallel_size={cfg['tp_size']}",
+        f"actor_rollout_ref.rollout.dtype={cfg['dtype']}", 
+        
         # ===== GRPO =====
         f"actor_rollout_ref.rollout.n={cfg['rollout_n']}",
         f"actor_rollout_ref.actor.use_kl_loss={cfg['use_kl']}",
@@ -86,8 +91,6 @@ def main():
         f"trainer.save_freq={cfg['save_steps']}",   
         "trainer.val_before_train=true",
         f"trainer.test_freq={cfg['test_steps']}",  
-        f"actor_rollout_ref.rollout.tensor_model_parallel_size={cfg['tp_size']}",
-        f"+actor_rollout_ref.model.override_config._attn_implementation={cfg['attn']}",
         
         # ===== reward =====
         "reward_model.enable=false",
@@ -97,10 +100,12 @@ def main():
 
     env = os.environ.copy()
     env["HYDRA_FULL_ERROR"] = "1"
+    env["NVTE_DEBUG"] = "1"
+    env["NVTE_DEBUG_LEVEL"] = "2"
     env["TENSORBOARD_DIR"] = "/root/autodl-tmp/LLM_RL_basic/outputs/tb"
     env.setdefault("PYTHONUNBUFFERED", "1")
-    # env["RAY_TMPDIR"] = "/root/autodl-tmp/LLM_RL_basic/outputs/ray"  # 收集 ray 的信息
     
+    # 把终端输出存在 logfile 里
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     logfile  = f"/root/autodl-tmp/LLM_RL_basic/outputs/log/driver.stdout.{timestamp}.log"
 

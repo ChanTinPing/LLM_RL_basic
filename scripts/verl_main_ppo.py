@@ -29,16 +29,6 @@ from verl.trainer.ppo.reward import load_reward_manager
 from verl.utils.device import is_cuda_available
 from verl.utils.import_utils import load_extern_type
 
-
-@hydra.main(config_path="config", config_name="ppo_trainer", version_base=None)
-def main(config):
-    """Main entry point for PPO training with Hydra configuration management.
-
-    Args:
-        config_dict: Hydra configuration dictionary containing training parameters.
-    """
-    run_ppo(config)
-
 import os, datetime
 def _log(p):
     ts = datetime.datetime.now().strftime("%F %T")
@@ -46,8 +36,14 @@ def _log(p):
     with open("/root/autodl-tmp/LLM_RL_basic/outputs/ppo_trace.txt","a",encoding="utf-8") as f:
         f.write(f"[{ts}] {p}\n"); f.flush(); os.fsync(f.fileno())
 
-_log("ENTER run_ppo")
+@hydra.main(config_path="config", config_name="ppo_megatron_trainer", version_base=None)
+def main(config):
+    """Main entry point for PPO training with Hydra configuration management.
 
+    Args:
+        config_dict: Hydra configuration dictionary containing training parameters.
+    """
+    run_ppo(config)
 
 # Define a function to run the PPO-like training process
 def run_ppo(config) -> None:
@@ -131,9 +127,6 @@ class TaskRunner:
         tokenizer = hf_tokenizer(local_path, trust_remote_code=trust_remote_code)
         # Used for multimodal LLM, could be None
         processor = hf_processor(local_path, trust_remote_code=trust_remote_code, use_fast=True)
-
-        _log(f"actor.strategy={config.actor_rollout_ref.actor.strategy}, "
-            f"critic.strategy={config.critic.strategy}")
         
         # Define worker classes based on the actor strategy.
         if config.actor_rollout_ref.actor.strategy in {"fsdp", "fsdp2"}:
@@ -160,7 +153,6 @@ class TaskRunner:
                 else ActorRolloutRefWorker
             )
             ray_worker_group_cls = RayWorkerGroup
-            _log(f"USING FSDP workers: actor_rollout_cls={actor_rollout_cls.__name__}, ray_worker_group_cls={ray_worker_group_cls.__name__}")
 
         elif config.actor_rollout_ref.actor.strategy == "megatron":
             assert config.actor_rollout_ref.actor.strategy == config.critic.strategy
@@ -173,7 +165,6 @@ class TaskRunner:
                 else ActorRolloutRefWorker
             )
             ray_worker_group_cls = NVMegatronRayWorkerGroup
-            _log(f"USING MEGATRON workers: actor_rollout_cls={actor_rollout_cls.__name__}, ray_worker_group_cls={ray_worker_group_cls.__name__}")
 
         else:
             raise NotImplementedError
@@ -185,7 +176,6 @@ class TaskRunner:
             Role.ActorRollout: ray.remote(actor_rollout_cls),
             Role.Critic: ray.remote(CriticWorker),
         }
-        _log(f"role_worker_mapping keys={list(role_worker_mapping.keys())}")
 
         # Define the resource pool specification.
         # Map roles to the resource pool.
@@ -250,15 +240,13 @@ class TaskRunner:
             collate_fn=collate_fn,
             train_sampler=train_sampler,
         )
-        _log(f"trainer class = {type(trainer).__name__}")
+        _log("finish initiate trainer")
         # Initialize the workers of the trainer.
-        _log("before trainer.init_workers()")
         trainer.init_workers()
-        _log("after trainer.init_workers()")
+        _log("finish initiate workers")
         # Start the training process.
-        _log("before trainer.fit()")
         trainer.fit()
-        _log("after trainer.fit()")
+        _log("finish training")
 
 
 def create_rl_dataset(data_paths, data_config, tokenizer, processor, is_train=True):

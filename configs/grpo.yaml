@@ -12,6 +12,7 @@ train_batch_size: 1           # 全局batch（VERL会按GPU拆分）
 ppo_micro_batch_per_gpu: 1    # 单卡micro-batch
 ppo_mini_batch_size: 1
 ppo_epochs: 1
+mem_utilz: 0.2                # vllm给kvcache的存储 ##############
 
 # Prompt
 prompt_template: |
@@ -30,7 +31,7 @@ kl_type: low_var_kl           # 低方差KL（VERL支持的一个选项）
 adv_estimator: grpo
 
 # 训练过程
-dtype: float32
+dtype: bfloat16
 tp_size: 1
 n_gpus: 1                     # 一机器多少GPU
 nnodes: 1                     # 多少机器
