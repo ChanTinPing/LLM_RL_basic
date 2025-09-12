@@ -58,13 +58,29 @@ def _extract_last_boxed(s: str) -> str | None:
     st, ed = spans[-1]
     return s[st:ed]
 
+def _normalize_gold(gt: str) -> str:
+    """若 gold 没有成对的数学定界符，则自动包一层 $$...$$。"""
+    s = gt.strip()
+    # 常见的几类成对定界
+    if (s.startswith("$$") and s.endswith("$$")):
+        return s
+    if (s.startswith("$") and s.endswith("$")):
+        return s
+    if (s.startswith(r"\[") and s.endswith(r"\]")):
+        return s
+    if (s.startswith(r"\(") and s.endswith(r"\)")):
+        return s
+    # 其它情况一律包 $$...$$
+    return f"$${s}$$"
+
 def compute_score(data_source, solution_str, ground_truth, extra_info=None) -> float:
     s = str(solution_str).strip()
     last_boxed = _extract_last_boxed(s)
     if last_boxed is None:
         return 0.0
     try:
-        gold = parse(str(ground_truth), extraction_config=_GOLD_CFG)
+        gold_norm = _normalize_gold(str(ground_truth))
+        gold = parse(gold_norm, extraction_config=_GOLD_CFG)
         pred = parse(last_boxed, extraction_config=_PRED_CFG)
         return 1.0 if verify(gold, pred) else 0.0
     except Exception:
@@ -76,7 +92,8 @@ def compute_score_wpred(data_source, solution_str, ground_truth, extra_info=None
     if last_boxed is None:
         return 0.0, None
     try:
-        gold = parse(str(ground_truth), extraction_config=_GOLD_CFG)
+        gold_norm = _normalize_gold(str(ground_truth))
+        gold = parse(gold_norm, extraction_config=_GOLD_CFG)
         pred = parse(last_boxed, extraction_config=_PRED_CFG)
         pred_pretty = pred[0] if isinstance(pred, (list, tuple)) and pred else pred
         return (1.0 if verify(gold, pred) else 0.0), pred_pretty
