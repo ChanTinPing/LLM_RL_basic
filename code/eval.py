@@ -10,7 +10,7 @@ from vllm import LLM, SamplingParams
 # ===== CONFIG（在这里改）=====
 MODEL_PATH     = "/root/autodl-tmp/LLM_RL_basic/weights/Qwen3-1p7B"
 DATA_PATH      = "/root/autodl-tmp/LLM_RL_basic/data/aime2025-all.parquet"   
-DATA_SOURCE    = "AIME2025"   # 没差  
+DATA_SOURCE    = "useless"   # 没差  
 K_TOTAL        = 8          # 想要的最终候选数
 K_PER_ROUND    = 4          # 单轮 k
 MAX_NEW_TOKENS = 32768

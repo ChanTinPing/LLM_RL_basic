@@ -1,17 +1,17 @@
 # ===== 基本配置 =====
 base_model: /root/autodl-tmp/LLM_RL_basic/weights/Qwen3-1p7B
-train_parquet: /root/autodl-tmp/LLM_RL_basic/data/deepscaler_small.parquet  # data/deepscaler.parquet
+train_parquet: /root/autodl-tmp/LLM_RL_basic/data/random_dapo.parquet  # data/deepscaler.parquet
 output_dir: weights/grpo-qwen3-1p7b
 reward_func: code/reward_math_verify.py
 logging: tensorboard
 
 # 文本长度与batch
 max_prompt_len: 512
-max_resp_len: 256
+max_resp_len: 1000
 train_batch_size: 1           # 全局batch（VERL会按GPU拆分）
-ppo_micro_batch_per_gpu: 1    # 单卡micro-batch
-ppo_mini_batch_size: 1
-ppo_epochs: 1
+ppo_micro_batch_per_gpu: 1    # 每次前向/反向训多少个trajectory（实操）
+ppo_mini_batch_size: 1        # 训练时，梯度以多少prompt的累积做训练(以prompt为单位)
+ppo_epochs: 1                 # ppo一个数据重复优化几次
 mem_utilz: 0.2                # vllm给kvcache的存储 ##############
 
 # Prompt
@@ -24,11 +24,13 @@ prompt_template: |
   {problem}
 
 # GRPO 关键
-rollout_n: 2                  # 每个prompt生成n个样本（GRPO组大小）
+rollout_n: 4                  # 每个prompt生成n个样本（GRPO组大小）
 use_kl: true
 kl_coef: 0.01                 # 先小；跑通后再调
 kl_type: low_var_kl           # 低方差KL（VERL支持的一个选项）
 adv_estimator: grpo
+rollout_dir: /root/autodl-tmp/LLM_RL_basic/outputs/rollout
+is_dapo: true                 # 是否丢弃全对全错
 
 # 训练过程
 dtype: bfloat16
@@ -38,11 +40,14 @@ nnodes: 1                     # 多少机器
 learning_rate: 5e-6
 total_epochs: 1               # 先快速打通
 attn: flash_attention_2
-save_steps: 5                # 多少iteration save一次
+
+# checkpoint
+save_steps: 1                 # 多少iteration save一次
+max_actor_ckpt_to_keep: 1
 
 # 测试
 test_steps: 5
-aime25_parquet: /root/autodl-tmp/LLM_RL_basic/data/aime2025-all.parquet
+aime25_parquet: /root/autodl-tmp/LLM_RL_basic/data/aime2025-one.parquet
 
 # 其他
 seed: 42

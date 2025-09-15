@@ -41,6 +41,10 @@ def main():
 
     set_seed(cfg["seed"])
     ensure_parquet(os.path.join(ROOT, cfg["train_parquet"]))
+    if not cfg['rollout_dir']:
+        rollout_data_dir = 'null'
+    else:
+        rollout_data_dir = f"{cfg['rollout_dir']}/{datetime.now().strftime('%y%m%d_%H%M%S')}"
 
     cmd = [
         sys.executable, "-m", "verl.trainer.main_ppo",
@@ -73,6 +77,7 @@ def main():
         "actor_rollout_ref.rollout.load_format=dummy_megatron",
         f"actor_rollout_ref.rollout.tensor_model_parallel_size={cfg['tp_size']}",
         f"actor_rollout_ref.rollout.dtype={cfg['dtype']}", 
+        f"+trainer.rollout_data_dir={rollout_data_dir}",
         
         # ===== GRPO =====
         f"actor_rollout_ref.rollout.n={cfg['rollout_n']}",
@@ -81,6 +86,7 @@ def main():
         f"actor_rollout_ref.actor.kl_loss_type={cfg['kl_type']}",
         f"algorithm.adv_estimator={cfg['adv_estimator']}",
         "algorithm.kl_ctrl.kl_coef=0.001",  
+        f"+is_dapo={cfg['is_dapo']}",
 
         # ===== trainer =====
         f"trainer.default_local_dir={cfg['output_dir']}",
@@ -91,23 +97,26 @@ def main():
         f"trainer.save_freq={cfg['save_steps']}",   
         "trainer.val_before_train=true",
         f"trainer.test_freq={cfg['test_steps']}",  
+        f"trainer.max_actor_ckpt_to_keep={cfg['max_actor_ckpt_to_keep']}",
         
         # ===== reward =====
         "reward_model.enable=false",
         f"custom_reward_function.path={os.path.abspath(cfg['reward_func'])}",
         "custom_reward_function.name=compute_score",
     ]
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     env = os.environ.copy()
     env["HYDRA_FULL_ERROR"] = "1"
     env["NVTE_DEBUG"] = "1"
     env["NVTE_DEBUG_LEVEL"] = "2"
-    env["TENSORBOARD_DIR"] = "/root/autodl-tmp/LLM_RL_basic/outputs/tb"
+    env["TENSORBOARD_DIR"] = f"/root/autodl-tmp/LLM_RL_basic/outputs/tb/{timestamp}"
+    env["TT_ENABLE"] = "1"
     env.setdefault("PYTHONUNBUFFERED", "1")
     
     # 把终端输出存在 logfile 里
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    logfile  = f"/root/autodl-tmp/LLM_RL_basic/outputs/log/driver.stdout.{timestamp}.log"
+    logfile = f"/root/autodl-tmp/LLM_RL_basic/outputs/log/driver.stdout.{timestamp}.log"
 
     ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
     with open(logfile, "a", buffering=1) as f:  # 行缓冲

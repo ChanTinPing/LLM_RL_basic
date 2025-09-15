@@ -14,6 +14,13 @@
 """
 Note that we don't combine the main with ray_trainer as ray_trainer is used by other main.
 """
+import os, datetime
+def _log(p):
+    ts = datetime.datetime.now().strftime("%F %T")
+    os.makedirs("/root/autodl-tmp/LLM_RL_basic/outputs", exist_ok=True)
+    with open("/root/autodl-tmp/LLM_RL_basic/outputs/ppo_trace.txt","a",encoding="utf-8") as f:
+        f.write(f"[{ts}] {p}\n"); f.flush(); os.fsync(f.fileno())
+        
 
 import os
 import socket
@@ -28,13 +35,6 @@ from verl.trainer.ppo.ray_trainer import RayPPOTrainer
 from verl.trainer.ppo.reward import load_reward_manager
 from verl.utils.device import is_cuda_available
 from verl.utils.import_utils import load_extern_type
-
-import os, datetime
-def _log(p):
-    ts = datetime.datetime.now().strftime("%F %T")
-    os.makedirs("/root/autodl-tmp/LLM_RL_basic/outputs", exist_ok=True)
-    with open("/root/autodl-tmp/LLM_RL_basic/outputs/ppo_trace.txt","a",encoding="utf-8") as f:
-        f.write(f"[{ts}] {p}\n"); f.flush(); os.fsync(f.fileno())
 
 @hydra.main(config_path="config", config_name="ppo_megatron_trainer", version_base=None)
 def main(config):
@@ -240,13 +240,14 @@ class TaskRunner:
             collate_fn=collate_fn,
             train_sampler=train_sampler,
         )
-        _log("finish initiate trainer")
         # Initialize the workers of the trainer.
         trainer.init_workers()
-        _log("finish initiate workers")
         # Start the training process.
-        trainer.fit()
-        _log("finish training")
+        if config.get("is_dapo", None) is True:
+            _log("is_dapo")
+            trainer.fit_dapo()
+        else:
+            trainer.fit()
 
 
 def create_rl_dataset(data_paths, data_config, tokenizer, processor, is_train=True):
