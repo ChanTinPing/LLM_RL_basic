@@ -71,11 +71,11 @@ def main():
         "actor_rollout_ref.rollout.name=vllm",
         "actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=8",
         f"actor_rollout_ref.rollout.gpu_memory_utilization={cfg['mem_utilz']}",
-        "actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=4",
         "actor_rollout_ref.rollout.load_format=dummy_megatron",
         f"actor_rollout_ref.rollout.tensor_model_parallel_size={cfg['tp_size']}",
         f"actor_rollout_ref.rollout.dtype={cfg['dtype']}",
-        f"+trainer.rollout_data_dir={rollout_data_dir}",
+        f"actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu={cfg['log_prob_micro_bs']}",
+        f"actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu={cfg['log_prob_micro_bs']}",
 
         # ===== GRPO / KL / 算法 =====
         f"+is_dapo={cfg['is_dapo']}",
@@ -85,6 +85,7 @@ def main():
         f"actor_rollout_ref.actor.clip_ratio_high={cfg['clip_ratio_high']}",
         f"actor_rollout_ref.rollout.temperature={cfg['temp']}",
         f"algorithm.adv_estimator={cfg['adv_estimator']}",
+        f"+trainer.rollout_data_dir={rollout_data_dir}",
 
         # ===== 训练器 / 日志与保存 =====
         f"trainer.default_local_dir={cfg['output_dir']}",

@@ -12,7 +12,7 @@ rollout_dir: /root/autodl-tmp/LLM_RL_basic/outputs/rollout
 
 # ===== 测试，Checkpoint =====
 test_steps: 5
-save_steps: 1                 # 多少iteration save一次
+save_steps: 5                 # 多少iteration save一次
 max_actor_ckpt_to_keep: 1
 
 # ===== Prompt 模板 =====
@@ -31,8 +31,8 @@ nnodes: 1                     # 多少机器
 
 # ===== 文本长度与 vLLM 显存 =====
 max_prompt_len: 3450
-max_resp_len: 21000           # 两者加起来 < 2^15
-mem_utilz: 0.5                # vllm给kvcache的存储 
+max_resp_len: 10000           # 两者加起来 < 2^15
+mem_utilz: 0.3                # vllm给kvcache的存储 
 
 # ===== 训练超参（批次/迭代） =====
 total_epochs: 1       
@@ -42,6 +42,7 @@ ppo_micro_batch_per_gpu: 1    # 每次实际前向/反向训多少个 trajectory
 ppo_epochs: 3                 # ppo一个数据重复优化几次
 rollout_n: 8                  # 8, 每个prompt生成n个样本（GRPO组大小）
 learning_rate: 2e-7           # Archer 训练 batch size 32, ppo epochs=1 是 1e-6，我的更少再除以 2*3
+log_prob_micro_bs: 2
 
 # 显存计算公式: 1 + 40/tp_size + MEM*mem_utilz
 # MEM=48 (L20)
@@ -53,7 +54,7 @@ is_dapo: true                 # 是否丢弃全对全错
 use_kl: true
 clip_ratio_low:  0.2
 clip_ratio_high: 0.28
-temp: 1.1                     # ProRL 1.2, Archer 1.0
+temp: 0.7                     # Qwen3-1p7b 建议 0.6, Qwen2.5 (ProRL 1.2, Archer 1.0)
 attn: flash_attention_2
 
 # ===== 其他 =====
