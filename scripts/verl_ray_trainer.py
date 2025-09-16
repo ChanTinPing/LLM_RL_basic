@@ -71,6 +71,7 @@ def _log(p):
     os.makedirs("/root/autodl-tmp/LLM_RL_basic/outputs", exist_ok=True)
     with open("/root/autodl-tmp/LLM_RL_basic/outputs/ppo_trace.txt","a",encoding="utf-8") as f:
         f.write(f"[{ts}] {p}\n"); f.flush(); os.fsync(f.fileno())
+from verl.utils.mem_prof__ import StageMem 
 
 class Role(Enum):
     """
@@ -1278,14 +1279,14 @@ class RayPPOTrainer:
 
         # add tqdm
         rollout_bar = tqdm(total=self.data_len, initial=self.rollout_prompts, desc="Rollout Prompts Num")
-        progress_bar = tqdm(initial=self.global_steps, desc="######## Training Progress", position=1)
+        print(self.global_steps)
 
         # we start from step 1
         self.global_steps += 1
         self.max_steps_duration = 0
 
         for epoch in range(self.config.trainer.total_epochs):
-            print(f"epoch: {epoch}")
+            print(f"Epoch: {epoch}")
             data_iter = iter(self.train_dataloader)
             while True:            
                 metrics = {}
@@ -1374,6 +1375,7 @@ class RayPPOTrainer:
                             keep_prompt_mask = rng > 0   # True=保留，False=全同丢弃
 
                         kept_prompts = int(keep_prompt_mask.sum().item())
+                        print(f"kept_prompts: {kept_prompts}")
                         if kept_prompts == 0:
                             # 本轮全部全同，继续下一轮
                             continue
@@ -1626,10 +1628,10 @@ class RayPPOTrainer:
 
                 # 22. log
                 # TODO: make a canonical logger that supports various backend
-                progress_bar.update(1)
                 logger.log(data=metrics, step=self.global_steps)
 
                 self.global_steps += 1
+                print(f"Global step: {self.global_steps}")
                 
             self._fill_leftovers = []
 
@@ -1639,8 +1641,9 @@ class RayPPOTrainer:
             self.val_reward_fn is not None
             and self.config.trainer.test_freq > 0
         ):
-            val_metrics: dict = self._validate()
-            metrics.update(val_metrics)
+            with StageMem('validate') as m:
+                val_metrics: dict = self._validate()
+                metrics.update(val_metrics)
         # ckpt
         # Check if the ESI (Elastic Server Instance)/training plan is close to expiration.
         esi_close_to_expiration = should_save_ckpt_esi(
@@ -1654,7 +1657,6 @@ class RayPPOTrainer:
         # close
         if val_metrics is not None:
             pprint(f"Final validation metrics: {val_metrics}")
-        progress_bar.close()
         return
 
 
