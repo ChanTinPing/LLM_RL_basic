@@ -48,63 +48,61 @@ def main():
 
     cmd = [
         sys.executable, "-m", "verl.trainer.main_ppo",
-        
+
         # ===== 数据 =====
         f"data.train_files={cfg['train_parquet']}",
-        f"data.val_files={cfg['aime25_parquet']}", 
+        f"data.val_files={cfg['test_parquet']}",
         f"data.train_batch_size={cfg['train_batch_size']}",
         f"data.max_prompt_length={cfg['max_prompt_len']}",
         f"data.max_response_length={cfg['max_resp_len']}",
-        "trainer.val_before_train=false",     ##########
-        "trainer.test_freq=0",                ##########
 
-        # ===== 模型 =====
-        f"actor_rollout_ref.model.path={cfg['base_model']}",   
+        # ===== 模型与策略（Actor/Critic） =====
+        f"actor_rollout_ref.model.path={cfg['base_model']}",
         "actor_rollout_ref.model.trust_remote_code=true",
         "actor_rollout_ref.actor.strategy=megatron",
-        "critic.strategy=megatron",
         f"actor_rollout_ref.actor.megatron.tensor_model_parallel_size={cfg['tp_size']}",
         f"actor_rollout_ref.actor.optim.lr={cfg['learning_rate']}",
         f"actor_rollout_ref.actor.ppo_mini_batch_size={cfg['ppo_mini_batch_size']}",
         f"actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu={cfg['ppo_micro_batch_per_gpu']}",
         f"actor_rollout_ref.actor.ppo_epochs={cfg['ppo_epochs']}",
-        
-        # ===== rollout =====
+        "critic.strategy=megatron",
+
+        # ===== Rollout / Ref（vLLM 推理） =====
         "actor_rollout_ref.rollout.name=vllm",
         "actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=8",
         f"actor_rollout_ref.rollout.gpu_memory_utilization={cfg['mem_utilz']}",
         "actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=4",
         "actor_rollout_ref.rollout.load_format=dummy_megatron",
         f"actor_rollout_ref.rollout.tensor_model_parallel_size={cfg['tp_size']}",
-        f"actor_rollout_ref.rollout.dtype={cfg['dtype']}", 
+        f"actor_rollout_ref.rollout.dtype={cfg['dtype']}",
         f"+trainer.rollout_data_dir={rollout_data_dir}",
-        
-        # ===== GRPO =====
+
+        # ===== GRPO / KL / 算法 =====
+        f"+is_dapo={cfg['is_dapo']}",
         f"actor_rollout_ref.rollout.n={cfg['rollout_n']}",
         f"actor_rollout_ref.actor.use_kl_loss={cfg['use_kl']}",
-        f"actor_rollout_ref.actor.kl_loss_coef={cfg['kl_coef']}",
-        f"actor_rollout_ref.actor.kl_loss_type={cfg['kl_type']}",
+        f"actor_rollout_ref.actor.clip_ratio_low={cfg['clip_ratio_low']}",
+        f"actor_rollout_ref.actor.clip_ratio_high={cfg['clip_ratio_high']}",
+        f"actor_rollout_ref.rollout.temperature={cfg['temp']}",
         f"algorithm.adv_estimator={cfg['adv_estimator']}",
-        "algorithm.kl_ctrl.kl_coef=0.001",  
-        f"+is_dapo={cfg['is_dapo']}",
 
-        # ===== trainer =====
+        # ===== 训练器 / 日志与保存 =====
         f"trainer.default_local_dir={cfg['output_dir']}",
         f"trainer.logger={cfg['logging']}",
         f"trainer.total_epochs={cfg['total_epochs']}",  #############
         f"trainer.n_gpus_per_node={cfg['n_gpus']}",
         f"trainer.nnodes={cfg['nnodes']}",
-        f"trainer.save_freq={cfg['save_steps']}",   
+        f"trainer.save_freq={cfg['save_steps']}",
         "trainer.val_before_train=true",
-        f"trainer.test_freq={cfg['test_steps']}",  
+        f"trainer.test_freq={cfg['test_steps']}",
         f"trainer.max_actor_ckpt_to_keep={cfg['max_actor_ckpt_to_keep']}",
-        
-        # ===== reward =====
+
+        # ===== 奖励函数（自定义 Reward） =====
         "reward_model.enable=false",
         f"custom_reward_function.path={os.path.abspath(cfg['reward_func'])}",
         "custom_reward_function.name=compute_score",
     ]
-    
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     env = os.environ.copy()

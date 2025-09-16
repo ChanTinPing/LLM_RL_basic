@@ -112,5 +112,6 @@ def make_synthetic_coinflip_dataset(
 if __name__ == "__main__":
     # main()
     # small_parquet(out_path="data/deepscaler_8_15.parquet", start=8, end=15)
-    # longest_parquet_len("data/deepscaler_20.parquet", "weights/Qwen3-1p7B")
-    make_synthetic_coinflip_dataset("data/random_dapo.parquet", 10)
+    longest_parquet_len("data/deepscaler.parquet", "weights/Qwen3-1p7B")
+    # make_synthetic_coinflip_dataset("data/random_dapo.parquet", 10)
+    # 最大 token 数 3367

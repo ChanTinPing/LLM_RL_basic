@@ -1,21 +1,22 @@
-# ===== 基本配置 =====
+# ===== 运行与基础配置 =====
 base_model: /root/autodl-tmp/LLM_RL_basic/weights/Qwen3-1p7B
-train_parquet: /root/autodl-tmp/LLM_RL_basic/data/random_dapo.parquet  # data/deepscaler.parquet
 output_dir: weights/grpo-qwen3-1p7b
 reward_func: code/reward_math_verify.py
 logging: tensorboard
+dtype: bfloat16
 
-# 文本长度与batch
-max_prompt_len: 512
-max_resp_len: 1000
-train_batch_size: 1           # 全局batch（VERL会按GPU拆分）
-ppo_micro_batch_per_gpu: 1    # 每次前向/反向训多少个trajectory（实操）
-ppo_mini_batch_size: 1        # 训练时，梯度以多少prompt的累积做训练(以prompt为单位)
-ppo_epochs: 1                 # ppo一个数据重复优化几次
-mem_utilz: 0.2                # vllm给kvcache的存储 ##############
+# ===== 数据路径（含输出） =====
+train_parquet: /root/autodl-tmp/LLM_RL_basic/data/deepscaler_20.parquet  # data/deepscaler.parquet
+test_parquet: /root/autodl-tmp/LLM_RL_basic/data/aime2025-one.parquet
+rollout_dir: /root/autodl-tmp/LLM_RL_basic/outputs/rollout
 
-# Prompt
-prompt_template: |
+# ===== 测试，Checkpoint =====
+test_steps: 5
+save_steps: 1                 # 多少iteration save一次
+max_actor_ckpt_to_keep: 1
+
+# ===== Prompt 模板 =====
+prompt_template: |  # GPT-4 tokenizer 49 token
   Please reason step by step. 
   At the very end, output ONLY the final numeric/closed-form answer in LaTeX as \boxed{{...}}. 
   Do not add any text after the box.
@@ -23,31 +24,37 @@ prompt_template: |
   Problem:
   {problem}
 
-# GRPO 关键
-rollout_n: 4                  # 每个prompt生成n个样本（GRPO组大小）
-use_kl: true
-kl_coef: 0.01                 # 先小；跑通后再调
-kl_type: low_var_kl           # 低方差KL（VERL支持的一个选项）
-adv_estimator: grpo
-rollout_dir: /root/autodl-tmp/LLM_RL_basic/outputs/rollout
-is_dapo: true                 # 是否丢弃全对全错
-
-# 训练过程
-dtype: bfloat16
-tp_size: 1
-n_gpus: 1                     # 一机器多少GPU
+# ===== 分布式参数 =====
+tp_size: 2
+n_gpus: 2                     # 一机器多少GPU
 nnodes: 1                     # 多少机器
-learning_rate: 5e-6
-total_epochs: 1               # 先快速打通
+
+# ===== 文本长度与 vLLM 显存 =====
+max_prompt_len: 3450
+max_resp_len: 21000           # 两者加起来 < 2^15
+mem_utilz: 0.5                # vllm给kvcache的存储 
+
+# ===== 训练超参（批次/迭代） =====
+total_epochs: 1       
+train_batch_size: 2           # 2, 丢给 rollout 多少 prompt
+ppo_mini_batch_size: 2        # 2, 训练时以多少 prompt 的累积做一次参数更新
+ppo_micro_batch_per_gpu: 1    # 每次实际前向/反向训多少个 trajectory（梯度累计）
+ppo_epochs: 3                 # ppo一个数据重复优化几次
+rollout_n: 8                  # 8, 每个prompt生成n个样本（GRPO组大小）
+learning_rate: 2e-7           # Archer 训练 batch size 32, ppo epochs=1 是 1e-6，我的更少再除以 2*3
+
+# 显存计算公式: 1 + 40/tp_size + MEM*mem_utilz
+# MEM=48 (L20)
+# trajectory_len/1000 * 0.12 (Qwen3-1p7B) * train_batch_size * rollout_n / tp_size < MEM * mem_utilz
+
+# ===== 算法与正则（GRPO / KL / 策略） =====
+adv_estimator: grpo
+is_dapo: true                 # 是否丢弃全对全错
+use_kl: true
+clip_ratio_low:  0.2
+clip_ratio_high: 0.28
+temp: 1.1                     # ProRL 1.2, Archer 1.0
 attn: flash_attention_2
 
-# checkpoint
-save_steps: 1                 # 多少iteration save一次
-max_actor_ckpt_to_keep: 1
-
-# 测试
-test_steps: 5
-aime25_parquet: /root/autodl-tmp/LLM_RL_basic/data/aime2025-one.parquet
-
-# 其他
+# ===== 其他 =====
 seed: 42
