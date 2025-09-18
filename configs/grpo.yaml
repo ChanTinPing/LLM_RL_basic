@@ -11,8 +11,8 @@ test_parquet: /root/autodl-tmp/LLM_RL_basic/data/aime2025-all.parquet
 rollout_dir: /root/autodl-tmp/LLM_RL_basic/outputs/rollout
 
 # ===== 测试，Checkpoint =====
-test_steps: 10
-save_steps: 10                # 多少iteration save一次
+test_steps: 2
+save_steps: 2                # 多少iteration save一次
 max_actor_ckpt_to_keep: 1
 max_actor_model_to_keep: 3
 
@@ -44,6 +44,7 @@ ppo_epochs: 3                 # ppo一个数据重复优化几次
 rollout_n: 8                  # 8, 每个prompt生成n个样本（GRPO组大小）
 learning_rate: 2e-7           # Archer 训练 batch size 32, ppo epochs=1 是 1e-6，我的更少再除以 2*3
 log_prob_micro_bs: 2
+data_shuffle: False
 
 # trajectory_len/1000 * 0.12 (Qwen3-1p7B) * train_batch_size * rollout_n / tp_size < MEM * mem_utilz
 

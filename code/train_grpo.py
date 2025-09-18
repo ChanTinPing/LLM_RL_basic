@@ -87,9 +87,10 @@ def main():
         f"+trainer.rollout_data_dir={rollout_data_dir}",
 
         # ===== 训练器 / 日志与保存 =====
+        f"+data.shuffle={cfg['data_shuffle']}",
         f"trainer.default_local_dir={cfg['output_dir']}",
         f"trainer.logger={cfg['logging']}",
-        f"trainer.total_epochs={cfg['total_epochs']}",  #############
+        f"trainer.total_epochs={cfg['total_epochs']}", 
         f"trainer.n_gpus_per_node={cfg['n_gpus']}",
         f"trainer.nnodes={cfg['nnodes']}",
         f"trainer.save_freq={cfg['save_steps']}",
