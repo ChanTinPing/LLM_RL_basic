@@ -6,14 +6,15 @@ logging: tensorboard
 dtype: bfloat16
 
 # ===== 数据路径（含输出） =====
-train_parquet: /root/autodl-tmp/LLM_RL_basic/data/deepscaler_20.parquet  # data/deepscaler.parquet
-test_parquet: /root/autodl-tmp/LLM_RL_basic/data/aime2025-one.parquet
+train_parquet: /root/autodl-tmp/LLM_RL_basic/data/deepscaler.parquet 
+test_parquet: /root/autodl-tmp/LLM_RL_basic/data/aime2025-all.parquet
 rollout_dir: /root/autodl-tmp/LLM_RL_basic/outputs/rollout
 
 # ===== 测试，Checkpoint =====
-test_steps: 5
-save_steps: 5                 # 多少iteration save一次
+test_steps: 10
+save_steps: 10                # 多少iteration save一次
 max_actor_ckpt_to_keep: 1
+max_actor_model_to_keep: 3
 
 # ===== Prompt 模板 =====
 prompt_template: |  # GPT-4 tokenizer 49 token
@@ -25,14 +26,14 @@ prompt_template: |  # GPT-4 tokenizer 49 token
   {problem}
 
 # ===== 分布式参数 =====
-tp_size: 2
-n_gpus: 2                     # 一机器多少GPU
+tp_size: 4
+n_gpus: 4                     # 一机器多少GPU
 nnodes: 1                     # 多少机器
 
 # ===== 文本长度与 vLLM 显存 =====
 max_prompt_len: 3450
-max_resp_len: 10000           # 两者加起来 < 2^15
-mem_utilz: 0.3                # vllm给kvcache的存储 
+max_resp_len: 30000           # 两者加起来 < 2^15
+mem_utilz: 0.375  # 18        # vllm给kvcache的存储 
 
 # ===== 训练超参（批次/迭代） =====
 total_epochs: 1       
@@ -44,8 +45,6 @@ rollout_n: 8                  # 8, 每个prompt生成n个样本（GRPO组大小�
 learning_rate: 2e-7           # Archer 训练 batch size 32, ppo epochs=1 是 1e-6，我的更少再除以 2*3
 log_prob_micro_bs: 2
 
-# 显存计算公式: 1 + 40/tp_size + MEM*mem_utilz
-# MEM=48 (L20)
 # trajectory_len/1000 * 0.12 (Qwen3-1p7B) * train_batch_size * rollout_n / tp_size < MEM * mem_utilz
 
 # ===== 算法与正则（GRPO / KL / 策略） =====

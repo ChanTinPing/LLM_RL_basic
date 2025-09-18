@@ -30,6 +30,10 @@ from enum import Enum
 from pprint import pprint
 from typing import Optional
 
+import time
+import torch.distributed as dist
+from safetensors.torch import save_file
+
 import numpy as np
 import ray
 import torch
@@ -71,7 +75,7 @@ def _log(p):
     os.makedirs("/root/autodl-tmp/LLM_RL_basic/outputs", exist_ok=True)
     with open("/root/autodl-tmp/LLM_RL_basic/outputs/ppo_trace.txt","a",encoding="utf-8") as f:
         f.write(f"[{ts}] {p}\n"); f.flush(); os.fsync(f.fileno())
-from verl.utils.mem_prof__ import StageMem 
+import subprocess, time, os, json, shutil
 
 class Role(Enum):
     """
@@ -969,7 +973,7 @@ class RayPPOTrainer:
 
         # save actor / critic
         self.actor_rollout_wg.save_checkpoint(
-            actor_local_path, actor_remote_path, self.global_steps, max_ckpt_to_keep=max_actor_ckpt_to_keep
+            actor_local_path, actor_remote_path, self.global_steps, max_ckpt_to_keep=max_actor_ckpt_to_keep, val_metric=self.val_metric_
         )
 
         if self.use_critic:
@@ -1580,6 +1584,7 @@ class RayPPOTrainer:
                     ):
                         with marked_timer("testing", timing_raw, color="green"):
                             val_metrics: dict = self._validate()
+                            self.val_metric_ = list(val_metrics.values())[0]
                         metrics.update(val_metrics)
 
                     # 18. checkpoint
@@ -1641,9 +1646,9 @@ class RayPPOTrainer:
             self.val_reward_fn is not None
             and self.config.trainer.test_freq > 0
         ):
-            with StageMem('validate') as m:
-                val_metrics: dict = self._validate()
-                metrics.update(val_metrics)
+            val_metrics: dict = self._validate()
+            self.val_metric_ = list(val_metrics.values())[0]
+            metrics.update(val_metrics)
         # ckpt
         # Check if the ESI (Elastic Server Instance)/training plan is close to expiration.
         esi_close_to_expiration = should_save_ckpt_esi(
@@ -1945,6 +1950,7 @@ class RayPPOTrainer:
                             val_metrics: dict = self._validate()
                             if is_last_step:
                                 last_val_metrics = val_metrics
+                            self.val_metric_ = list(val_metrics.values())[0]
                         metrics.update(val_metrics)
 
                     # 18. checkpoint

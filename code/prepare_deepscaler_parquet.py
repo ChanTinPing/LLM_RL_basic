@@ -73,32 +73,18 @@ def make_synthetic_coinflip_dataset(
     random.seed(seed)
 
     task_en = (
-        f"Rules (EN mirror):\n"
-        f"- First, write at least {filler_words_min} words of arbitrary text (narration/lists/whatever), "
-        "but **do NOT include any `\\boxed{}` anywhere** in that body;\n"
-        "- Then, on the **last line**, output **exactly once** either `\\boxed{1}` or `\\boxed{2}`;\n"
-        "- Choose `\\boxed{1}` and `\\boxed{2}` with equal probability (50/50);\n"
-        "- `\\boxed{}` must appear **exactly once in the whole output** (only the final line);\n"
-        "- Do NOT use other math delimiters like `$...$` or `\\[...\\]` anywhere.\n"
-        "- Put only the `\\boxed{1}` or `\\boxed{2}` on the last line, with no trailing characters."
+        "Write some useless words of random text, should irregular (no repeat or a-z), "
+        "then calculate the ascii number of the last alphabet, and then mod 3, at last output the number in `\\boxed{num}`."
+        "just write directly and calc, dont think."
     )
-
-    base_problem = (
-        "生成一段任意主题的长文本作为“正文”，严格遵守上述规则后在最后给出盒子结果。"
-    )
-
-    def build_user_content():
-        body = f"{task_en}\n\n{base_problem}"
-        return body
 
     rows = []
     for _ in range(num_rows):
-        user_text = build_user_content()
-        prompt_msgs = [{"role": "user", "content": user_text}]
+        prompt_msgs = [{"role": "user", "content": task_en}]
 
         rows.append({
             "prompt": prompt_msgs,
-            "reward_model": {"ground_truth": "1"},
+            "reward_model": {"ground_truth": "0"},
             "data_source": "synthetic_coinflip_boxed",
         })
 
@@ -110,8 +96,8 @@ def make_synthetic_coinflip_dataset(
 
 
 if __name__ == "__main__":
-    # main()
-    # small_parquet(out_path="data/deepscaler_8_15.parquet", start=8, end=15)
-    longest_parquet_len("data/deepscaler.parquet", "weights/Qwen3-1p7B")
+    main()
+    # small_parquet(out_path="data/deepscaler_one.parquet", start=0, end=1)
+    # longest_parquet_len("data/deepscaler.parquet", "weights/Qwen3-1p7B")
     # make_synthetic_coinflip_dataset("data/random_dapo.parquet", 10)
     # 最大 token 数 3367

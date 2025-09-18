@@ -69,7 +69,6 @@ def main():
 
         # ===== Rollout / Ref（vLLM 推理） =====
         "actor_rollout_ref.rollout.name=vllm",
-        "actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=8",
         f"actor_rollout_ref.rollout.gpu_memory_utilization={cfg['mem_utilz']}",
         "actor_rollout_ref.rollout.load_format=dummy_megatron",
         f"actor_rollout_ref.rollout.tensor_model_parallel_size={cfg['tp_size']}",
@@ -97,6 +96,7 @@ def main():
         "trainer.val_before_train=true",
         f"trainer.test_freq={cfg['test_steps']}",
         f"trainer.max_actor_ckpt_to_keep={cfg['max_actor_ckpt_to_keep']}",
+        f"+actor_rollout_ref.max_actor_model_to_keep={cfg['max_actor_model_to_keep']}",
 
         # ===== 奖励函数（自定义 Reward） =====
         "reward_model.enable=false",
