@@ -18,6 +18,7 @@ PPO Trainer with Ray-based single controller.
 This trainer supports model-agonistic model initialization with huggingface
 """
 
+import math
 import json
 import os
 import glob
@@ -33,6 +34,8 @@ from typing import Optional
 import time
 import torch.distributed as dist
 from safetensors.torch import save_file
+from tensordict import TensorDict  # 若已导入可删
+from dataclasses import asdict
 
 import numpy as np
 import ray
@@ -1393,7 +1396,96 @@ class RayPPOTrainer:
 
                         # 取出保留轨迹并累加到缓存
                         dp_kept = self._dp_index_select(dp, keep_indices)
-                        kept_dp = dp_kept if kept_dp is None else DataProto.concat([kept_dp, dp_kept])
+
+                        ##################### debug #########################################################
+                        def _finite(x):
+                            # JSON 标准不收 NaN/Inf；统一替换为 None
+                            if isinstance(x, float) and (math.isnan(x) or math.isinf(x)):
+                                return None
+                            return x
+
+                        def _to_jsonable(obj):
+                            # 递归把各种可能的类型转成 JSON 友好形式
+                            try:
+                                # torch.Tensor / TensorDict
+                                if isinstance(obj, torch.Tensor):
+                                    return {
+                                        "_type": "torch.Tensor",
+                                        "dtype": str(obj.dtype),
+                                        "shape": list(obj.shape),
+                                        "data": obj.detach().cpu().tolist(),  # 全量
+                                    }
+                                if isinstance(obj, TensorDict):
+                                    return {
+                                        "_type": "TensorDict",
+                                        "batch_size": list(obj.batch_size),
+                                        "items": {k: _to_jsonable(v) for k, v in obj.items()},
+                                    }
+                                # numpy
+                                if isinstance(obj, np.ndarray):
+                                    return {
+                                        "_type": f"np.ndarray({obj.dtype})",
+                                        "shape": list(obj.shape),
+                                        "data": obj.tolist(),  # 全量
+                                    }
+                                # 基础可序列化
+                                if obj is None or isinstance(obj, (bool, int, str)):
+                                    return obj
+                                if isinstance(obj, float):
+                                    return _finite(obj)
+                                # 容器
+                                if isinstance(obj, (list, tuple)):
+                                    return [_to_jsonable(x) for x in obj]
+                                if isinstance(obj, dict):
+                                    out = {}
+                                    for k, v in obj.items():
+                                        # 键要求是 str
+                                        ks = str(k)
+                                        out[ks] = _to_jsonable(v)
+                                    return out
+                                # dataclass（比如 DataProto）
+                                if hasattr(obj, "__dataclass_fields__"):
+                                    return {k: _to_jsonable(getattr(obj, k)) for k in obj.__dataclass_fields__.keys()}
+                                # 其它 numpy 标量
+                                if isinstance(obj, (np.bool_, np.integer)):
+                                    return int(obj)
+                                if isinstance(obj, np.floating):
+                                    return _finite(float(obj))
+                                # bytes -> utf-8 / repr
+                                if isinstance(obj, (bytes, bytearray)):
+                                    try:
+                                        return obj.decode("utf-8")
+                                    except Exception:
+                                        return repr(obj)
+                                # 兜底：字符串化
+                                return repr(obj)
+                            except Exception as e:
+                                return {"_unserializable": repr(obj), "_error": repr(e)}
+
+                        def dump_dataproto_to_json(dp, path):
+                            os.makedirs(os.path.dirname(path), exist_ok=True)
+                            payload = _to_jsonable(dp)
+                            with open(path, "w", encoding="utf-8") as f:
+                                json.dump(payload, f, ensure_ascii=False)
+                        ##################### debug #########################################################
+        
+                        try:
+                            kept_dp = dp_kept if kept_dp is None else DataProto.concat([kept_dp, dp_kept])  ##### 核心句子
+                        ##################### debug #########################################################
+                        except Exception as e:
+                            print(f"[trainer] {e}")
+                            dump_dataproto_to_json(kept_dp, "outputs/debug/kept_dp.json") if kept_dp is not None else None
+                            dump_dataproto_to_json(dp_kept, "outputs/debug/dp_kept.json")
+                            meta = {
+                                "error": str(e),
+                                "global_steps": int(getattr(self, "global_steps", -1)),
+                                "epoch": int(epoch),
+                                "n_repeat": int(n_repeat),
+                            }
+                            with open("outputs/debug/concat_meta.json", "w", encoding="utf-8") as f:
+                                json.dump(meta, f, ensure_ascii=False, indent=2)
+                            raise
+                        ##################### debug #########################################################
 
                         kept_prompts_total += kept_prompts
                         if kept_prompts_total >= train_bsz:

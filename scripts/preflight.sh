@@ -96,7 +96,6 @@ try:
     print("  peft.__version__         :", getattr(peft, "__version__", "unknown"))
 except Exception as e:
     print("  [WARN] peft not OK ->", e)
- [WARN] xformers not OK ->", e)
 
 print("[result] step2 overall:", "OK" if ok else "HAS_FAILURES")
 PY

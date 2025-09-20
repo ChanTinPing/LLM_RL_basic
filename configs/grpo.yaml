@@ -11,10 +11,11 @@ test_parquet: /root/autodl-tmp/LLM_RL_basic/data/aime2025-all.parquet
 rollout_dir: /root/autodl-tmp/LLM_RL_basic/outputs/rollout
 
 # ===== 测试，Checkpoint =====
+val_bef_train: false
 test_steps: 2
 save_steps: 2                # 多少iteration save一次
 max_actor_ckpt_to_keep: 1
-max_actor_model_to_keep: 3
+max_actor_model_to_keep: 5
 
 # ===== Prompt 模板 =====
 prompt_template: |  # GPT-4 tokenizer 49 token
