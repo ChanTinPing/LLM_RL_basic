@@ -43,6 +43,50 @@ __all__ = ["DataProto", "union_tensor_dict"]
 with contextlib.suppress(Exception):
     tensordict.set_lazy_legacy(False).set()
 
+import os, datetime
+def _log(p):
+    ts = datetime.datetime.now().strftime("%F %T")
+    os.makedirs("/root/autodl-tmp/LLM_RL_basic/outputs", exist_ok=True)
+    with open("/root/autodl-tmp/LLM_RL_basic/outputs/ppo_trace.txt","a",encoding="utf-8") as f:
+        f.write(f"[{ts}] {p}\n"); f.flush(); os.fsync(f.fileno())
+        
+def show_struct(x, max_depth=5):
+    def return_attr_maybe_call(attr):
+        return attr() if callable(attr) else attr
+    
+    def get_cur_struct(cur):
+        shp = return_attr_maybe_call(getattr(cur, 'shape', None))
+        siz = return_attr_maybe_call(getattr(cur, 'size', None))
+        ln  = return_attr_maybe_call(getattr(cur, '__len__', None))
+        return (type(cur), shp, siz, ln)
+
+    ans, seen = [], set()
+    cur = x
+    for _ in range(max_depth):
+        if id(cur) in seen:
+            ans.append(get_cur_struct(cur))
+            break
+        
+        seen.add(id(cur))
+        ans.append(get_cur_struct(cur))
+
+        if isinstance(cur, (str, bytes)):  break
+        
+        if isinstance(cur, dict) and cur:
+            cur = next(iter(cur.values()))
+        else:
+            is_nextted = False
+            for go_to_next in (lambda o: o[0], lambda o: next(iter(o))):
+                try:
+                    cur = go_to_next(cur)
+                    is_nextted = True
+                    break
+                except Exception:
+                    pass
+            if not is_nextted:  break
+
+    return ans
+
 
 class _DataProtoConfigMeta(type):
     _config = {}
@@ -753,39 +797,44 @@ class DataProto:
         for batch in data:
             batch_lst.append(batch.batch)
         new_batch = torch.cat(batch_lst, dim=0) if batch_lst[0] is not None else None
+    
+        def _canon_block(a: np.ndarray) -> np.ndarray:
+            """
+            输入块 a：
+              - 情况 A：1D object 数组 (B,), 元素为 list[int] 或 ndarray[int]
+              - 情况 B：2D 数值矩阵 (B, L)
+            输出：
+              - 1D object 数组 (B,), 每个元素都是 list[int]
+            """
+            a = np.asarray(a)  # 不指定 dtype，先看原始结构
+            if a.ndim == 1 and a.dtype == object:  # 元素可能是 list[int] 或 ndarray[int]
+                out = np.empty(a.shape[0], dtype=object)
+                for i, seq in enumerate(a):
+                    out[i] = seq.tolist() if isinstance(seq, np.ndarray) else seq
+                return out
+            elif a.ndim == 2:  # (B, L) 数值矩阵：每行转 list[int]
+                B = a.shape[0]
+                out = np.empty(B, dtype=object)
+                for i in range(B):
+                    out[i] = a[i].tolist()
+                return out
+            else:  # 可选的最小兜底：把任意东西视为一条序列
+                raise TypeError(f'a struct: {show_struct(a)}')
 
         non_tensor_batch = list_of_dict_to_dict_of_list(list_of_dict=[d.non_tensor_batch for d in data])
-
-        def _canon_to_1d_object(x):
-            a = np.asarray(x, dtype=object)
-            # 0-d -> (1,)
-            if a.ndim == 0:
-                return a.reshape(1,)
-            # (B,1) -> (B,)
-            if a.ndim == 2 and a.shape[1] == 1:
-                a = a.squeeze(1)
-            # ≥2D（如 (B,L,...)）：逐行 tolist() -> (B,) 对象数组
-            if a.ndim >= 2:
-                a = np.array([a[i].tolist() for i in range(a.shape[0])], dtype=object)
-            return a  # 一维或已转换为一维
-    
         for key, val in non_tensor_batch.items():
-            try:
-                parts = [_canon_to_1d_object(x) for x in val]  # val 是 list/tuple
-                non_tensor_batch[key] = np.concatenate(parts, axis=0)
-                assert np.asarray(non_tensor_batch[key], dtype=object).ndim == 1, \
-                    f"non-tensor field '{key}' must be 1D after concat"
-            except Exception as e:
-                try:
-                    shapes = [np.asarray(x, dtype=object).shape for x in val]
-                except Exception:
-                    shapes = ["<summarize failed>"]
-                print(f"[protocol.concat][ERROR] key={key}: {e}; part_shapes={shapes}")
-                raise
-
+            if key != 'raw_prompt_ids':
+                non_tensor_batch[key] = np.concatenate(val, axis=0)
+            else:
+                parts = [_canon_block(blk) for blk in val if blk is not None]
+                non_tensor_batch[key] = (
+                    np.concatenate(parts, axis=0)
+                    if parts else np.asarray([], dtype=object)
+                )   # -> ndarray[list[int]]
+                            
         cls = type(data[0]) if len(data) > 0 else DataProto
         return cls(batch=new_batch, non_tensor_batch=non_tensor_batch, meta_info=data[0].meta_info)
-
+    
     def reorder(self, indices):
         """
         Note that this operation is in-place

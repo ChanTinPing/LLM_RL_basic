@@ -11,25 +11,25 @@ from vllm import LLM, SamplingParams
 MODEL_PATH     = "/root/autodl-tmp/LLM_RL_basic/weights/Qwen3-1p7B"
 DATA_PATH      = "/root/autodl-tmp/LLM_RL_basic/data/aime2025-all.parquet"   
 DATA_SOURCE    = "useless"   # 没差  
+OUT_PATH       = "/root/autodl-tmp/LLM_RL_basic/data/eval/aime2025_eval.json"
 K_TOTAL        = 8          # 想要的最终候选数
-K_PER_ROUND    = 4          # 单轮 k
+K_PER_ROUND    = 8          # 单轮 k
 MAX_NEW_TOKENS = 32768
 assert K_TOTAL % K_PER_ROUND == 0
 
 # vLLM & 采样参数
 USE_BF16         = True
-TENSOR_PARALLEL  = 1
+TENSOR_PARALLEL  = 4
 TEMPERATURE      = 0.6
 TOP_P            = 0.95
 TOP_K            = 20         # <=0 表示不启用 top-k
 STOP_TOKENS      = []         # 例如 ["<|eot_id|>", "</s>"]
 
 # 显存相关
-BATCH_SIZE              = 1
+BATCH_SIZE              = 6
 MAX_NUM_SEQS            = BATCH_SIZE * K_PER_ROUND   # 并发槽位上限；单人推理就设成你的最大 batch
 GPU_MEMORY_UTILIZATION  = 0.9          # 预留显存比例
 # 输出
-OUT_PATH         = "/root/autodl-tmp/LLM_RL_basic/data/eval/aime2025_eval.json"
 PARTS_DIR        = OUT_PATH + ".parts"            # ← 新增：分片目录
 PROGRESS_PATH    = OUT_PATH + ".progress.json"    # ← 新增：进度文件
 SUMMARY_PATH     = OUT_PATH + ".summary.json"     # 在配置区加上这一行

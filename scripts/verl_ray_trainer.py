@@ -80,6 +80,48 @@ def _log(p):
         f.write(f"[{ts}] {p}\n"); f.flush(); os.fsync(f.fileno())
 import subprocess, time, os, json, shutil
 
+def show_struct(x, max_depth=5):
+    def return_attr_maybe_call(attr):
+        return attr() if callable(attr) else attr
+    
+    def get_cur_struct(cur):
+        shp = return_attr_maybe_call(getattr(cur, 'shape', None))
+        siz = return_attr_maybe_call(getattr(cur, 'size', None))
+        try:
+            ln = return_attr_maybe_call(getattr(cur, '__len__', None))
+        except:
+            ln = None  # 0-d tensor 无 len
+        return (type(cur), shp, siz, ln)
+
+    ans, seen = [], set()
+    cur = x
+    for _ in range(max_depth):
+        if id(cur) in seen:
+            ans.append(get_cur_struct(cur))
+            break
+        
+        seen.add(id(cur))
+        ans.append(get_cur_struct(cur))
+
+        if isinstance(cur, (str, bytes)):  break
+        
+        if isinstance(cur, dict) and cur:
+            cur = next(iter(cur.values()))
+        else:
+            is_nextted = False
+            for go_to_next in (lambda o: o[0], lambda o: next(iter(o))):
+                try:
+                    cur = go_to_next(cur)
+                    is_nextted = True
+                    break
+                except Exception:
+                    pass
+            if not is_nextted:  break
+
+    return ans
+
+
+
 class Role(Enum):
     """
     To create more roles dynamically, you can subclass Role and add new members
@@ -1029,6 +1071,8 @@ class RayPPOTrainer:
                     f.write(str(int(getattr(self, "rollout_prompts", 0))).strip() + "\n")
             except Exception as e:
                 print(f"Warning: failed to write rollout_prompts.txt: {e}")
+        
+        print("Finish save")
 
     def _load_checkpoint(self):
         if self.config.trainer.resume_mode == "disable":
